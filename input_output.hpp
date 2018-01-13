@@ -32,12 +32,12 @@ Reads a given file <filename> that is expected to be in TSPLIB format
 extracts the coordinates of the vertices of the graph and writes them to the array nodes.
 The vector nodes is expected to be empty when this method is called on it.
 */
-void read_coordinates(std::string filename, std::vector<coordinate_pair> & nodes);
+std::vector<coordinate_pair> read_coordinates(std::string filename);
 
 /*
 Calculates the initial cost matrix from the vector of coordinates of points given
 */
-std::vector<std::vector<double>> calculate_initial_cost_matrix(std::vector<coordinate_pair> & nodes);
+std::vector<std::vector<double>> calculate_initial_cost_matrix(std::vector<coordinate_pair> * nodes);
 
 
 
@@ -47,16 +47,7 @@ to be filled
 */
 
 
-void print_matrix(std::vector<std::vector<double>> const & matrix)
-{
-	for (unsigned int i=0; i<matrix.size(); i++)
-	{
-		for (unsigned int j=0; j<matrix[i].size(); j++)
-		{
-			std::cout << std::to_string(matrix[i][j]);
-		}
-	}
-}
+void print_matrix(std::vector<std::vector<double>> const & matrix);
 
 /***********************************
 OTHER
@@ -64,9 +55,6 @@ OTHER
 /*
 Returns the rounded euclidean distance between the points p1 and p2
 */
-int distance(coordinate_pair p1, coordinate_pair p2)
-{
-	return std::lround(std::sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)));
-}
+int distance(coordinate_pair p1, coordinate_pair p2);
 
 #endif

@@ -20,7 +20,7 @@ Reads a given file <filename> that is expected to be in TSPLIB format
 extracts the coordinates of the vertices of the graph and writes them to the array nodes.
 The vector nodes is expected to be empty when this method is called on it.
 */
-void read_coordinates(std::string filename, std::vector<coordinate_pair> & nodes)
+std::vector<coordinate_pair> read_coordinates(std::string filename)
 {
 	//Open the file filename
 	std::ifstream infile(filename);
@@ -28,7 +28,7 @@ void read_coordinates(std::string filename, std::vector<coordinate_pair> & nodes
 	
 	if (!infile){
 		std::cerr << "Could not read file "+filename;
-		return;
+		return std::vector<coordinate_pair> ();
 	}
 	
 	std::istringstream iss;
@@ -51,10 +51,11 @@ void read_coordinates(std::string filename, std::vector<coordinate_pair> & nodes
 	if (n == 0){
 		std::cerr << "Input file doesn't meet the specification or specifies an emtpy graph.";
 		infile.close();
-		return;
+		return std::vector<coordinate_pair> ();
 	}
 	
 	//read the 'node coord section' and fill the vector nodes with coordinate_pairs
+	std::vector<coordinate_pair> nodes;
 	nodes.reserve(n);
 	unsigned int i;
 	double x, y;
@@ -77,13 +78,14 @@ void read_coordinates(std::string filename, std::vector<coordinate_pair> & nodes
 		std::cerr << "The number of vertices doesn't match the specification.";
 	}
 	infile.close();
+	return nodes;
 }
 
 
 /*
 Calculates the initial cost matrix from the vector of coordinates of points given
 */
-std::vector<std::vector<double>> calculate_initial_cost_matrix(std::vector<coordinate_pair> & nodes)
+std::vector<std::vector<double>> calculate_initial_cost_matrix(std::vector<coordinate_pair>& nodes)
 {
 	unsigned int n = nodes.size();
 	std::vector<std::vector<double>> result (n, std::vector<double> (n, 0.0));
@@ -106,8 +108,7 @@ and calculate_initial_cost_matrix to calculate the cost matrix from the coordina
 */
 std::vector<std::vector<double>> read_graph(std::string filename)
 {
-	std::vector<coordinate_pair> nodes();
-	read_coordinates(filename, nodes);
+	std::vector<coordinate_pair> nodes = read_coordinates(filename);
 	std::vector<std::vector<double>> matrix = calculate_initial_cost_matrix(nodes);
 	return matrix;
 }
@@ -117,5 +118,24 @@ std::vector<std::vector<double>> read_graph(std::string filename)
 OUTPUT SECTION
 */
 
+void print_matrix(std::vector<std::vector<double>> const & matrix)
+{
+	for (unsigned int i=0; i<matrix.size(); i++)
+	{
+		for (unsigned int j=0; j<matrix[i].size(); j++)
+		{
+			std::cout << std::to_string(matrix[i][j]) << " ";
+		}
+		std::cout << "\n";
+	}
+}
+
+/***********************************
+OTHER
+*/
+int distance(coordinate_pair p1, coordinate_pair p2)
+{
+	return std::lround(std::sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)));
+}
 //Here will be something like 
 //void write_tour(std::string filename, some_tour)
