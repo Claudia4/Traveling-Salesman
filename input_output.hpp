@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <iostream>
 
@@ -45,7 +46,7 @@ std::vector<std::vector<double>> calculate_initial_cost_matrix(std::vector<coord
 OUTPUT SECTION
 to be filled
 */
-
+void write_output(std::string filename, std::vector<std::pair<unsigned int, unsigned int> > & tree, unsigned int n);
 
 void print_matrix(std::vector<std::vector<double>> const & matrix);
 

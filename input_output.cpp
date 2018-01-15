@@ -8,6 +8,7 @@
 //Datatypes
 #include <string>
 #include <vector>
+#include <utility>
 
 
 /***************************************************
@@ -117,6 +118,49 @@ std::vector<std::vector<double>> read_graph(std::string filename)
 /***************************************************
 OUTPUT SECTION
 */
+
+void write_output(std::string filename, std::vector<std::pair<unsigned int, unsigned int> > & tree, unsigned int n)
+{
+	std::ofstream file;
+	file.open (filename, std::ios::trunc);
+	if (! file.is_open())
+	{
+		throw std::logic_error("Output file could not be opened.");
+	}
+	file << "TYPE: TOUR\n";
+	file << "DIMENSION: " << std::to_string(n) << "\n";
+	file << "TOUR_SECTION\n";
+
+	unsigned int last, current;	//node indices starting from 0 as in tree
+	last = tree.at(0).first;
+	current = tree.at(0).second;
+	file << std::to_string(last+1) <<"\n";
+	file << std::to_string(current+1) << "\n";
+	
+	for (unsigned int i = 0; i<n-2; i++) //print n-2 more vertices after the first two
+	{
+		for (unsigned int j=0; j<tree.size(); j++)
+		{
+			if (tree.at(j).first == current && tree.at(j).second != last)
+			{
+				last = current;
+				current = tree.at(j).second;
+				break;
+			}
+			if (tree.at(j).second == current && tree.at(j).first != last)
+			{
+				last = current;
+				current = tree.at(j).first;
+				break;
+			}
+		}
+		file << std::to_string(current+1) << "\n";
+	}
+
+	file << "-1\n";
+	file << "EOF";
+	file.close();
+}
 
 void print_matrix(std::vector<std::vector<double>> const & matrix)
 {
