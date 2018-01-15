@@ -3,10 +3,10 @@
 #include <vector>
 #include <utility>
 
-QNode::QNode(std::vector<std::pair<unsigned int, unsigned int> > R, std::vector<std::pair<unsigned int, unsigned int> > F, unsigned int size)
+QNode::QNode(std::vector<std::pair<unsigned int, unsigned int> > R, std::vector<std::pair<unsigned int, unsigned int> > F, std::vector<double> L, unsigned int size)
 	:R ( R ),
 	F ( F ),
-	lambda  ( std::vector<double> (size) ),
+	lambda  ( L ),
 	one_tree(std::vector<std::pair<unsigned int, unsigned int>> (size)),
 	HK ( 0 )
 	{}
