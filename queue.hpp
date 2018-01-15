@@ -17,7 +17,7 @@ public:
 	std::vector<double> lambda;
 	std::vector<std::pair<unsigned int,unsigned int>> one_tree;
 	double HK;
-	QNode(std::vector<std::pair<unsigned int, unsigned int>> R, std::vector<std::pair<unsigned int, unsigned int>> F, unsigned int size);
+	QNode(std::vector<std::pair<unsigned int, unsigned int>> R, std::vector<std::pair<unsigned int, unsigned int>> F, std::vector<double> L, unsigned int size);
 };
 
 /*
