@@ -44,6 +44,10 @@ std::vector<coordinate_pair> read_coordinates(std::string filename)
 		if (s == "DIMENSION:"){
 			iss >> n;
 		}
+		if (s == "DIMENSION"){
+			iss >> s;
+			iss >> n;
+		}
 		if (s == "NODE_COORD_SECTION"){
 			break;
 		}
