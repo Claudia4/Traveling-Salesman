@@ -18,6 +18,7 @@ public:
 	std::vector<std::pair<unsigned int,unsigned int>> one_tree;
 	double HK;
 	QNode(std::vector<std::pair<unsigned int, unsigned int>> R, std::vector<std::pair<unsigned int, unsigned int>> F, std::vector<double> L, unsigned int size);
+	QNode();
 };
 
 /*
@@ -28,11 +29,13 @@ class ListElement
 {
 public:
 	QNode content;
-	ListElement* successor;
+	unsigned int successor;
 	
-	ListElement(QNode content, ListElement* successor);
+	ListElement(QNode & content);
+	ListElement();
 	//Recursive insertion of list elements sorted by content.HK
-	void insert(QNode node);
+	void insert(std::vector<ListElement> &S, unsigned int position);
+	void set_content(QNode & Node);
 };
 
 /*
@@ -46,13 +49,13 @@ public:
 
 	//Add a new ListElement with content node, insertion sorted by content.HK
 	//this only makes sense after node.content.HK has been set correctly
-	void insert(QNode node);
+	void insert(std::vector<ListElement> &S, unsigned int position);
 	//Get and delete the first element from the list
-	QNode pop();
+	unsigned int pop(std::vector<ListElement> &S);
 	//Get length of the list
 	unsigned int get_len();
 private:
-	ListElement* head;
+	unsigned int head;
 	unsigned int len;
 };
 

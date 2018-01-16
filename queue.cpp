@@ -10,64 +10,77 @@ QNode::QNode(std::vector<std::pair<unsigned int, unsigned int> > R, std::vector<
 	one_tree(std::vector<std::pair<unsigned int, unsigned int>> (size)),
 	HK ( 0 )
 	{}
+QNode::QNode() {}
 
 
-ListElement::ListElement(QNode content, ListElement* successor)
+ListElement::ListElement(QNode & content)
 	: content (content),
-	successor (successor)
+	successor (std::numeric_limits<unsigned int>::max())
 	{}
-
-void ListElement::insert(QNode node)
+	
+	
+ListElement::ListElement()
+{ successor=std::numeric_limits<unsigned int>::max();
+}
+	
+void ListElement::set_content(QNode & Node) {
+	content=Node;
+}
+void ListElement::insert(std::vector<ListElement> &S, unsigned int position)
 {
-	if(successor == NULL || node.HK < successor -> content.HK)
+	if(successor == std::numeric_limits<unsigned int>::max())
 	{
-		ListElement new_elem = ListElement(node, successor);
-		successor = &new_elem;
+		S.at(position).successor=std::numeric_limits<unsigned int>::max();
+		successor = position;
+	}
+	else if(S.at(position).content.HK > S.at(successor).content.HK) {
+		S.at(position).successor=std::numeric_limits<unsigned int>::max();
+		successor = position;
 	}
 	else
 	{
-		successor -> insert(node);
+		S.at(successor).insert(S,position);
 	}
 }
 
 
 List::List()
-	:head (NULL),
+	:head (std::numeric_limits<unsigned int>::max()),
 	len (0)
 	{}
 
-void List::insert(QNode node)
+void List::insert(std::vector<ListElement> &S, unsigned int position)
 {
 	if (len == 0 )
 	{
-		ListElement new_elem = ListElement(node, NULL);
-		head = & new_elem;
+		S.at(position).successor=std::numeric_limits<unsigned int>::max();
+		head = position;
 		len = 1;
 	}
 	else
 	{
-		if(head -> content.HK > node.HK)
+		if(S.at(head).content.HK < S.at(position).content.HK)
 		{
-			ListElement new_elem = ListElement(node, head);
-			head = & new_elem;
+			S.at(position).successor= head;
+			head = position;
 		}
 		else
-		{
-			head -> insert(node);
+		{	
+			S.at(head).insert(S,position);
 		}
 		len++;
 	}
 }
 
 
-QNode List::pop()
+unsigned int List::pop(std::vector<ListElement> &S)
 {
 	if(len == 0)
 	{
 		throw std::logic_error("pop failed because list is empty");
 	}
-	QNode r = head -> content;
-	head = head -> successor;
+	unsigned int r = head;
+	head = S.at(head).successor;
 	len--;
 	return r;
 }
