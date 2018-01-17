@@ -44,10 +44,17 @@ std::vector<std::vector<double>> calculate_initial_cost_matrix(std::vector<coord
 
 /*************************************
 OUTPUT SECTION
-to be filled
+*/
+
+/*
+Writes the tour given by the edges in tree to the file <filename> in the TSPLIB tour format 
+Creates the file, if neccessary. Overwrites existing files.
 */
 void write_output(std::string filename, std::vector<std::pair<unsigned int, unsigned int> > & tree, unsigned int n);
 
+/*
+Prints the given matrix to the console
+*/
 void print_matrix(std::vector<std::vector<double>> const & matrix);
 
 /***********************************

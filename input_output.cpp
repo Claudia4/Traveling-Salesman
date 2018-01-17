@@ -15,11 +15,9 @@
 INPUT SECTION
 */
 
-
 /*
-Reads a given file <filename> that is expected to be in TSPLIB format
-extracts the coordinates of the vertices of the graph and writes them to the array nodes.
-The vector nodes is expected to be empty when this method is called on it.
+Reads a given file <filename> that is expected to be in TSPLIB format,
+extracts the coordinates of the vertices of the graph and returns them
 */
 std::vector<coordinate_pair> read_coordinates(std::string filename)
 {
@@ -28,8 +26,7 @@ std::vector<coordinate_pair> read_coordinates(std::string filename)
 	std::string line;
 	
 	if (!infile){
-		std::cerr << "Could not read file "+filename;
-		return std::vector<coordinate_pair> ();
+		throw std::logic_error("Could not read file "+filename);
 	}
 	
 	std::istringstream iss;
@@ -54,9 +51,8 @@ std::vector<coordinate_pair> read_coordinates(std::string filename)
 	}
 	
 	if (n == 0){
-		std::cerr << "Input file doesn't meet the specification or specifies an emtpy graph.";
 		infile.close();
-		return std::vector<coordinate_pair> ();
+		throw std::logic_error("Input file doesn't meet the specification or specifies an emtpy graph.");
 	}
 	
 	//read the 'node coord section' and fill the vector nodes with coordinate_pairs
@@ -77,12 +73,12 @@ std::vector<coordinate_pair> read_coordinates(std::string filename)
 		else
 		{} //ToDo: enter the node in the right position. For most files, this case will not occur, but we probably have to allow it.
 	}
+	infile.close();
 
 	if (n != nodes.size())
 	{
-		std::cerr << "The number of vertices doesn't match the specification.";
+		throw std::logic_error("The number of vertices doesn't match the specification.");
 	}
-	infile.close();
 	return nodes;
 }
 
@@ -122,7 +118,10 @@ std::vector<std::vector<double>> read_graph(std::string filename)
 /***************************************************
 OUTPUT SECTION
 */
-
+/*
+Writes the tour given by the edges in tree to the file <filename> in the TSPLIB tour format 
+Creates the file, if neccessary. Overwrites existing files.
+*/
 void write_output(std::string filename, std::vector<std::pair<unsigned int, unsigned int> > & tree, unsigned int n)
 {
 	std::ofstream file;
@@ -143,7 +142,7 @@ void write_output(std::string filename, std::vector<std::pair<unsigned int, unsi
 	
 	for (unsigned int i = 0; i<n-2; i++) //print n-2 more vertices after the first two
 	{
-		for (unsigned int j=0; j<tree.size(); j++)
+		for (unsigned int j=0; j<tree.size(); j++) //find an edge that contains the current vertex but is not the previously used edge
 		{
 			if (tree.at(j).first == current && tree.at(j).second != last)
 			{
@@ -158,7 +157,7 @@ void write_output(std::string filename, std::vector<std::pair<unsigned int, unsi
 				break;
 			}
 		}
-		file << std::to_string(current+1) << "\n";
+		file << std::to_string(current+1) << "\n"; //print vertex indices starting from 1, not 0
 	}
 
 	file << "-1\n";
@@ -185,5 +184,4 @@ int distance(coordinate_pair p1, coordinate_pair p2)
 {
 	return std::lround(std::sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)));
 }
-//Here will be something like 
-//void write_tour(std::string filename, some_tour)
+

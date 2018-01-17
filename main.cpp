@@ -3,8 +3,9 @@
 #include <tuple>
 #include <vector>
 #include <limits>
-#include "input_output.cpp"
-#include "queue.cpp"
+
+#include "input_output.hpp"
+#include "queue.hpp"
 
 //Returns the index of a vertex adjacent to v by a required edge, if it exists, and n otherwise
 unsigned int is_incident_to_required(QNode & current_node, unsigned int v, unsigned int n)
@@ -23,6 +24,10 @@ unsigned int is_incident_to_required(QNode & current_node, unsigned int v, unsig
 	return n;
 }
 
+/*
+Checks wether the edge {i,j} is contained in the tree given by the edge list tree
+returns 1 if it is contained and 0 otherwise
+*/
 unsigned int is_in_tree(std::vector<std::pair<unsigned int, unsigned int> > const & tree, unsigned int i, unsigned int j)
 {
 	for (unsigned int k=0; k<tree.size(); k++)
@@ -35,6 +40,10 @@ unsigned int is_in_tree(std::vector<std::pair<unsigned int, unsigned int> > cons
 	return 0;
 }
 
+/*
+Checks wether the edge {i,j} is in the list of forbidden edges of the QNode node
+returns 1 if it is contained and 0 otherwise
+*/
 unsigned int is_forbidden(QNode const & node, unsigned int i, unsigned int j)
 {
 	for (unsigned int k=0; k<node.F.size(); k++)
@@ -47,16 +56,26 @@ unsigned int is_forbidden(QNode const & node, unsigned int i, unsigned int j)
 	return 0;
 }
 
+/*
+Performs the branching step of the branch-and-bound algorithm on the QNode current_node, 
+where tree is the one-tree computed for current_node, degrees contains the degree of every vertex within the tree and n is the problem dimension
+the function expects tree not to be a tour, but to contain some vertex of degree at least 3
+returns a vector of new QNodes to be added to the queue
+All choices are being made as recommended in the paper by Volgenant & Jonker
+*/
 std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > const & tree, std::vector<int> const & degrees, QNode & current_node, unsigned int n)
 {
 	std::vector<QNode> result;
-	//assuming that we already checked wether tree is a tour
 	unsigned int min_degree_req = n; //minimal degree greater than two of a vertex incident to a required edge
 	unsigned int min_degree = n; //minimal degree greater than two of a vertex not incident to a required edge
-	unsigned int p_req; //vertex where min_degree_req was attained
-	unsigned int p; //vertex where min_degree was attained
-	unsigned int req_neighbor;
+	unsigned int p_req = n; //vertex where min_degree_req was attained
+	unsigned int p = n; //vertex where min_degree was attained
+	unsigned int req_neighbor = n; //other endpoint of the required edge incident to p_req
 	
+	/* Try to find a vertex of degree at least 3 (but degree as small as possible)
+		that is incident to a required edge (this would be p_req)
+	If no such vertex exists, find any vertex of degree at least 3 but as small as possible, this will be p
+	*/
 	for (unsigned int i = 0; i<n; i++)
 	{
 		if (degrees.at(i) > 2)
@@ -80,9 +99,9 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 			}
 		}
 	}
-	if (min_degree_req < n) //branching with two new vertices
+	if (min_degree_req < n) //p_req existed; leads to branching with two new vertices
 	{
-		//choose e_1 that is not in the tree, add S_2 and S_3 (with notation as in the paper)
+		//choose e_1 that is not in the tree
 		unsigned int i;
 		for (i=0; i<n; i++)
 		{
@@ -109,6 +128,9 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 				}
 			}
 		}
+
+		//Create the QNode for S2, where e_1 is required
+		//as there is one more required edge incident to p_req, forbid all other edges incident to p_req
 		std::vector<std::pair<unsigned int, unsigned int> > R = current_node.R;
 		R.push_back(std::pair<unsigned int, unsigned int> (i,p_req));
 		std::vector<std::pair<unsigned int, unsigned int> > F = current_node.F;
@@ -123,6 +145,7 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 		QNode S2 = QNode(R, F, current_node.lambda, n);
 		result.push_back(S2);
 
+		//Create the QNode for S3, where e_1 is forbidden
 		R = current_node.R;
 		F = current_node.F;
 		F.push_back(std::pair<unsigned int, unsigned int> (i, p_req));
@@ -160,9 +183,9 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 		QNode S3 = QNode(R, F, current_node.lambda, n);
 		result.push_back(S3);
 	}
-	else //branching with three new vertices
+	else //p_req doesn't exist, use p. leads to branching with three new vertices
 	{
-		//choose e_1 that is not in the tree and some e_2, add S_1, S_2 and S_3
+		//choose e_1 that is (preferably) not in the tree and some e_2
 		unsigned int i, j;
 		for (i=0; i<n; i++)
 		{
@@ -194,6 +217,8 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 				}
 			}
 		}
+
+		//Create the QNode S1, where e_1 and e_2 are required
 		std::vector<std::pair<unsigned int, unsigned int> > R = current_node.R;
 		R.push_back(std::pair<unsigned int, unsigned int> (i,p));
 		R.push_back(std::pair<unsigned int, unsigned int> (j,p));
@@ -209,6 +234,7 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 		QNode S1 = QNode(R, F, current_node.lambda, n);
 		result.push_back(S1);
 
+		//Create the QNode S2, where e_1 is required and e_2 is forbidden
 		R = current_node.R;
 		F = current_node.F;
 		R.push_back(std::pair<unsigned int, unsigned int> (i, p));
@@ -247,9 +273,11 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 		QNode S2 = QNode(R, F, current_node.lambda, n);
 		result.push_back(S2);
 
+		//Create the QNode S3, where e_1 is forbidden
 		R = current_node.R;
 		F = current_node.F;
 		F.push_back(std::pair<unsigned int, unsigned int> (i,p));
+		// if all but two edges incident to p are forbidden, we can require the last two ones
 		if(num_forbidden == n-3)
 		{
 			//we can reuse forbidden, but we have to be careful because it should be a bit different now
@@ -271,6 +299,10 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 	return result;
 }
 
+/*
+Checks wether the one-tree given by the edge list tree is actually a tour
+returns 1 if it is, and 0 otherwise
+*/
 bool check_tour(std::vector<std::pair<unsigned int,unsigned int>> const & Tree) {
 	std::vector<unsigned int> degree(Tree.size(),0);
 	for(unsigned int i=0;i<Tree.size();i++) {
@@ -284,6 +316,15 @@ bool check_tour(std::vector<std::pair<unsigned int,unsigned int>> const & Tree) 
 	return 0;
 }
 
+/*
+Implementation of Prim's algorithm in order to compute an MST 
+of the subgraph induced by the vertices 1, ..., n-1 
+of the graph given by the cost matrix Weights
+that takes into account that some edges are forbidden (omitted)
+and some edges are required (req)
+Saves an edge list of the resulting tree in Tree
+returns wether the algorithm terminated successfully (0) or not (1).
+*/
 bool minimum_spanning_tree(std::vector<std::pair<unsigned int,unsigned int>> & Tree, std::vector <std::vector<int>> const & omitted, 
 std::vector <std::vector<double>> const & Weights, unsigned int const req) {
 	unsigned int size=Weights.size();
@@ -345,8 +386,12 @@ std::vector <std::vector<double>> const & Weights, unsigned int const req) {
 	return 0;	
 }
 
-
-//Node contains required edges, forbidden edges, empty tree and initial lambda value from the parent branching node
+/*
+Calculates the Held-Karp bound (with forbidden & required edges as given in Node)
+and completes the information (HK, lambda, one-tree) in the given node object
+before the execution, node contains required edges, forbidden edges, empty tree and initial lambda value from the parent branching node
+returns wether the algorithm terminated successfully (0) or not (1)
+*/
 bool Held_Karp_bound(std::vector <std::vector<double>> const & W, QNode & Node, std::vector <int> & degree, double t,  unsigned int const  steps) {
 	
 	unsigned int size=W.size();
@@ -486,7 +531,11 @@ bool Held_Karp_bound(std::vector <std::vector<double>> const & W, QNode & Node, 
 	return 0;
 }
 
+/*
+Computes the inital value for t, t_0 as recommended in the paper
+*/
 double initial_value(std::vector <std::vector<double>> const & W) {
+
 	std::vector<std::pair<unsigned int,unsigned int>> Tree(W.size());
 	std::vector <std::vector<int>> omitted(W.size(),std::vector<int>(W.size(),0));
 	double t=0;
@@ -519,7 +568,10 @@ double initial_value(std::vector <std::vector<double>> const & W) {
 	return t/(2*W.size());
 }
 
-//insert a branching node new_elem in the queue L wrt the Held-Karp-Bound of new_elem 
+
+/*
+Performs the sorted insertion of the branching node new_elem in the queue L wrt the Held-Karp-Bound of new_elem 
+*/
 void insert(std::vector<QNode> & L, QNode const & new_elem) {
 	L.push_back(new_elem);
 	QNode tmp;
@@ -532,6 +584,12 @@ void insert(std::vector<QNode> & L, QNode const & new_elem) {
 	}
 }
 
+/*
+Branch-and-Bound algorithm for the TSP
+on the graph given by the cost matrix W
+returns a pair <optimal tour, optimal tour weight>
+where the tour is given as an (unsorted) list of edges
+*/
 std::pair<std::vector<std::pair<unsigned int, unsigned int>>, double> Branch_and_Bound(std::vector <std::vector<double>> const & W) {
 		unsigned int size=W.size();
 		std::vector <int> degree(size,0);
@@ -597,7 +655,6 @@ std::pair<std::vector<std::pair<unsigned int, unsigned int>>, double> Branch_and
 			
 			//consider node only if its HK bound is smaller than U
 			if(node.HK<U) {
-				//std::cout<<node.HK<<"\n";
 				for(unsigned int i=0; i< size ; i++) {
 					degree1.at(node.one_tree.at(i).first)++;
 					degree1.at(node.one_tree.at(i).second)++;
@@ -646,11 +703,11 @@ int main(int argc, char* argv[])
 {
 	if (argc < 3)
 	{
-		std::cout << "Required first argument '--instance <filename>' missing.";
+		std::cerr << "Required first argument '--instance <filename>' missing.\n";
 		return 1;
 	}
 	if(argc!=3 && argc!=5) {
-		std::cout<<"Wrong number of arguments.";
+		std::cerr <<"Wrong number of arguments. Usage: -- instance <filename> [--solution <filename2>]\n";
 		return 1;
 	}
  	std::string arg (argv[1]);
@@ -658,7 +715,7 @@ int main(int argc, char* argv[])
 	
 	if(arg.compare("--instance") != 0)
 	{
-		std::cout << "Required first argument '--instance <filename>' missing or misspelled.";
+		std::cerr << "Required first argument '--instance <filename>' missing or misspelled.\n";
 		return 1;
 	}
 	try {
@@ -666,14 +723,13 @@ int main(int argc, char* argv[])
 	}
 	catch (std::logic_error e) 
 	{
-		std::cout<<e.what();
+		std::cerr << e.what() << "\n";
 		return 1;
 	}
 	std::vector<std::pair<unsigned int, unsigned int>>Tree;
 	double OPT=0;
 	std::tie( Tree, OPT)=Branch_and_Bound(graph);
-	std::cout<<OPT;
-	//print_matrix(graph);
+	std::cout << OPT << "\n";
 
 	if(argc == 5)
 	{	
@@ -685,7 +741,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			std::cout << "Optional second argument '--solution <filename>' misspelled.";
+			std::cerr << "Optional second argument '--solution <filename>' misspelled.\n";
 			return 1;
 		}
 	}

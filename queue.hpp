@@ -7,7 +7,7 @@
 /*
 Vertex of the Branch&Bound tree
 to save required (R) and forbidden (F) edges 
-and the Held-Karp bound (HK) and the lambda vector for which it was attained
+and the Held-Karp bound (HK) and the lambda vector and one-tree for which it was attained
 */
 class QNode
 {
@@ -25,7 +25,17 @@ public:
 	QNode(std::vector<std::pair<unsigned int, unsigned int>> R, std::vector<std::pair<unsigned int, unsigned int>> F, std::vector<double> L, unsigned int size);
 	QNode();
 };
+
+
+/* Note on the following code:
+We initially tried to save Q using a singly linked list that is implemented below
+this would have allowed linear time sorted insertion and constant time removal of the best-bound element
+However this failed because of the too short lifetime of the ListElements - they disappeared after the routine that added them terminated
+Therefore we now use the vector of QNodes S in Branch_and_Bound.
+*/
+
 //can be deleted
+
 /*
 List element for the class list (singly linked list)
 to store a priority queue of QNodes

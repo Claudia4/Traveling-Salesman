@@ -12,7 +12,8 @@ QNode::QNode(std::vector<std::pair<unsigned int, unsigned int> > R, std::vector<
 	{}
 QNode::QNode() {}
 
-//can be deleted
+
+//can be deleted - see note in queue.hpp
  
 /*
 ListElement::ListElement(QNode & content)
