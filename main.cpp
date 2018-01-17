@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdlib>
 #include <utility>
 #include <tuple>
 #include <vector>
@@ -57,6 +56,7 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 	unsigned int p_req; //vertex where min_degree_req was attained
 	unsigned int p; //vertex where min_degree was attained
 	unsigned int req_neighbor;
+	
 	for (unsigned int i = 0; i<n; i++)
 	{
 		if (degrees.at(i) > 2)
@@ -96,7 +96,7 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 			}
 		}
 		if (i==n) //all non-tree edges incident to p are forbidden, choose a tree edge as e_1
-		{
+		{	
 			for (i=0; i<n; i++)
 			{
 				if(i!=p_req && i!=req_neighbor)
@@ -126,6 +126,7 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 		R = current_node.R;
 		F = current_node.F;
 		F.push_back(std::pair<unsigned int, unsigned int> (i, p_req));
+		
 		//check if all but two are forbidden, if so, require the two other ones
 		std::vector<unsigned int> forbidden (n, 0);
 		forbidden[p_req] = 1;
@@ -172,7 +173,7 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 			}
 		}
 		if (i==n) //all non-tree edges incident to p are forbidden, choose a tree edge as e_1
-		{
+		{	
 			for (i=0; i<n; i++)
 			{
 				if(i!= p && ! is_forbidden(current_node, i, p))
@@ -270,7 +271,13 @@ std::vector<QNode> branch(std::vector<std::pair<unsigned int, unsigned int> > co
 	return result;
 }
 
-bool check_tour(std::vector<std::pair<unsigned int,unsigned int>> const & Tree, std::vector<int> const & degree) {
+bool check_tour(std::vector<std::pair<unsigned int,unsigned int>> const & Tree) {
+	std::vector<unsigned int> degree(Tree.size(),0);
+	for(unsigned int i=0;i<Tree.size();i++) {
+		degree.at(Tree.at(i).first)++;
+		degree.at(Tree.at(i).second)++;
+	}
+	//check whether the degree of each vertex is two
 	for(unsigned int i=0;i<Tree.size();i++) {
 		if(degree.at(i)!=2) return 1;
 	}
@@ -282,7 +289,7 @@ std::vector <std::vector<double>> const & Weights, unsigned int const req) {
 	unsigned int size=Weights.size();
 	std::vector<bool> visited(size,0);
 	
-	//min stores for each vertex an edge of minimum weight to the set of visited verticies
+	//min stores for each vertex an edge of minimum weight incident to the set of visited verticies
 	std::vector<std::pair<double,unsigned int>> min(size,std::make_pair(std::numeric_limits<double>::infinity(),0));
 	
 	unsigned int vertex=1;
@@ -310,6 +317,7 @@ std::vector <std::vector<double>> const & Weights, unsigned int const req) {
 				}
 			}
 		}
+		
 		//find an edge of minimum weight between visited and not visited verticies
 		for(unsigned int i=2; i<size;i++) {
 			if(!visited.at(i) && min.at(i).first<minimum) {
@@ -317,7 +325,7 @@ std::vector <std::vector<double>> const & Weights, unsigned int const req) {
 				new_vertex=i;
 			}
 		}
-		//too many required edges
+		//too many forbidden edges
 		if(new_vertex==vertex) return 1;
 		
 		//update number of required edges in Tree
@@ -333,11 +341,12 @@ std::vector <std::vector<double>> const & Weights, unsigned int const req) {
 	}
 	//too many required edges
 	if(req_num<req) return 1;
+	
 	return 0;	
 }
 
-//ToDo store Tree with maximum HK bound
-//Node contains required edges, forbidden edges, empty tree and initial lambda value
+
+//Node contains required edges, forbidden edges, empty tree and initial lambda value from the parent branching node
 bool Held_Karp_bound(std::vector <std::vector<double>> const & W, QNode & Node, std::vector <int> & degree, double t,  unsigned int const  steps) {
 	
 	unsigned int size=W.size();
@@ -347,55 +356,86 @@ bool Held_Karp_bound(std::vector <std::vector<double>> const & W, QNode & Node, 
 	std::vector <std::vector<int>> omitted(size, std::vector <int>(size,0));
 	std::vector <double> OptLambda(size);
 	
+	unsigned int req=Node.R.size();
 	double Treeweight=0;
 	double delta=3*t/(2*steps);
 	double ddelta=t/(steps*steps-steps);
 	double firstmin= std::numeric_limits<double>::infinity();
 	double secondmin= std::numeric_limits<double>::infinity();
 	unsigned int first,second;
-	
+	unsigned int req1=0;
+	unsigned int req2=0;
+	std::vector<bool> forbidden(size,0);
 	
 	for(unsigned int i=0;i<size;i++) {
 			degree.at(i)=0;
 	}
 	
 	//mark all required and forbidden edges
+	//if edges incident to 0 are required we store them
 	for(unsigned int i=0; i<(Node.R).size();i++) {
 		omitted.at((Node.R).at(i).first).at((Node.R).at(i).second)=1;
 		omitted.at((Node.R).at(i).second).at((Node.R).at(i).first)=1;
+		if((Node.R).at(i).first==0) {
+			req--;
+			if(req<Node.R.size()-1){
+				req2=(Node.R).at(i).second;
+			}
+			else req1=(Node.R).at(i).second;
+			
+		}
+		if((Node.R).at(i).second==0) {
+			req--;
+			if(req<Node.R.size()-1){
+				req2=(Node.R).at(i).first;
+			}
+			else req1=(Node.R).at(i).first;
+			
+		}
 	}
+	//if edges incident to 0 are forbidden we mark them
 	for(unsigned int i=0; i<(Node.F).size();i++) {
 		omitted.at((Node.F).at(i).first).at((Node.F).at(i).second)=2;
 		omitted.at((Node.F).at(i).second).at((Node.F).at(i).first)=2;
+		if((Node.F).at(i).first==0) forbidden.at((Node.F).at(i).second)=1;
+		if((Node.F).at(i).second==0) forbidden.at((Node.F).at(i).first)=1;
 	}
 	
-	//new weights
+	//compute new weights
 	for(unsigned int i=0;i<size; i++) {
 		for(unsigned int j=0;j<size;j++) {
-			
 			Weights.at(i).at(j)=W.at(i).at(j)+(Node.lambda).at(i)+(Node.lambda).at(j);
 		}
 	}
 	
 	for(unsigned int k=0;k<steps;k++) {
 		
-		//MST
-		if(minimum_spanning_tree(Tree,omitted, Weights,(Node.R).size())) return 1;
+		//compute MST, if MST does not exist return 1
+		if(minimum_spanning_tree(Tree,omitted, Weights,req)) return 1;
 	
 		//1-tree
 		for(unsigned int i=1; i<size;i++) {
-			if(Weights.at(0).at(i)<firstmin) {
+			if(Weights.at(0).at(i)<firstmin && !forbidden.at(i)) {
 				firstmin=Weights.at(0).at(i);
 				first=i;
 			}
-			else if(Weights.at(0).at(i)<secondmin) {
+			else if(Weights.at(0).at(i)<secondmin && !forbidden.at(i)) {
 				secondmin=Weights.at(0).at(i);
 				second=i;
 			}
 		}
-	
-		Tree.at(Tree.size()-2)=std::make_pair(0,first);
-		Tree.at(Tree.size()-1)=std::make_pair(0,second);
+		if(req1==0) {
+			Tree.at(Tree.size()-2)=std::make_pair(0,first);
+			Tree.at(Tree.size()-1)=std::make_pair(0,second);
+		}
+		else if(req2==0) {
+			Tree.at(Tree.size()-2)=std::make_pair(0,first);
+			Tree.at(Tree.size()-1)=std::make_pair(0,req1);
+		}
+		else {
+			Tree.at(Tree.size()-2)=std::make_pair(0,req1);
+			Tree.at(Tree.size()-1)=std::make_pair(0,req2);
+		}
 	
 		//compute degrees
 		for(unsigned int i=0;i<Tree.size();i++) {
@@ -427,7 +467,6 @@ bool Held_Karp_bound(std::vector <std::vector<double>> const & W, QNode & Node, 
 		//update lambda
 		for(unsigned int i=0;i<size;i++) {
 			(Node.lambda).at(i)+=(degree.at(i)-2)*t;
-			//std::cout<<lambda.at(i)<<"\n";
 			degree.at(i)=0;
 		}
 		 
@@ -441,8 +480,9 @@ bool Held_Karp_bound(std::vector <std::vector<double>> const & W, QNode & Node, 
 	
 	for(unsigned int i=0; i< size;i++) {
 		(Node.lambda).at(i)=OptLambda.at(i);
+		degree.at(Node.one_tree.at(i).first)++;
+		degree.at(Node.one_tree.at(i).second)++;
 	}
-	
 	return 0;
 }
 
@@ -454,6 +494,7 @@ double initial_value(std::vector <std::vector<double>> const & W) {
 	double secondmin= std::numeric_limits<double>::infinity();
 	unsigned int first,second;
 	
+	//compute MST
 	minimum_spanning_tree(Tree,omitted,W,0);
 	
 	for(unsigned int i=1; i<Tree.size();i++) {
@@ -466,31 +507,46 @@ double initial_value(std::vector <std::vector<double>> const & W) {
 			second=i;
 		}	
 	}
+	
+	//one_tree
 	Tree.at(Tree.size()-2)=std::make_pair(0,first);
 	Tree.at(Tree.size()-1)=std::make_pair(0,second);
 	
+	//compute 
 	for(unsigned int i=0;i<Tree.size();i++) {
 		t+=W.at(Tree.at(i).first).at(Tree.at(i).second);
 	} 
 	return t/(2*W.size());
 }
 
+//insert a branching node new_elem in the queue L wrt the Held-Karp-Bound of new_elem 
+void insert(std::vector<QNode> & L, QNode const & new_elem) {
+	L.push_back(new_elem);
+	QNode tmp;
+	unsigned int position=L.size()-1;
+	while(position>0 && L.at(position-1).HK<L.at(position).HK) {
+		tmp=L.at(position);
+		L.at(position)=L.at(position-1);
+		L.at(position-1)=tmp;
+		position--;
+	}
+}
+
 std::pair<std::vector<std::pair<unsigned int, unsigned int>>, double> Branch_and_Bound(std::vector <std::vector<double>> const & W) {
-		//ToDo Queue anlegen
-		//compute upper bound
-		std::vector <int> degree(W.size(),0);
-		double U=W.at(W.size()-1).at(0);
+		unsigned int size=W.size();
+		std::vector <int> degree(size,0);
+		double U=W.at(size-1).at(0);
 		double t;
 		unsigned int N;
-		unsigned int size=W.size();
+		
 		std::vector<std::pair<unsigned int, unsigned int>> Opt(size);
 		
 		Opt.at(0)=std::make_pair(size-1,0);
+		//compute upper bound
 		for(unsigned int i=0; i<W.size()-1;i++) {
 			U+=W.at(i).at(i+1);
 			Opt.at(i+1)=std::make_pair(i,i+1);
 		}
-		
 		//initialization of N and t
 		//for root:
 		t=initial_value(W);
@@ -498,51 +554,87 @@ std::pair<std::vector<std::pair<unsigned int, unsigned int>>, double> Branch_and
 		
 		//computing lower bound
 		QNode root(std::vector<std::pair<unsigned int, unsigned int>>(), std::vector<std::pair<unsigned int, unsigned int>>(), std::vector<double>(size), size);
-		
 		Held_Karp_bound(W, root, degree, t, N);
-		if(!check_tour(root.one_tree, degree)) {
+		
+		//if a tour is already found, it is optimum
+		if(!check_tour(root.one_tree)) {
 			for(unsigned int i=0;i<size;i++) {
 				Opt.at(i)=root.one_tree.at(i);
 			}
 			return std::make_pair(Opt, root.HK);
-		} 
+		}
+		
+		//initialization of N and t for other verticies
 		N=(unsigned int)ceil((double)size/4.)+5;
 		t=0;
 		for(unsigned int i=0; i< size ; i++) {
 			t+=std::abs((root.lambda).at(i));
 		}
 		t=t/(2.*size);
-		List queue;
-		std::vector<QNode> B = branch(root.one_tree, degree, root, size);
 		
+		//begin of branching
+		std::vector<QNode> B = branch(root.one_tree, degree, root, size);
+		//queue
+		std::vector<QNode> S;
 		for(unsigned int i=0; i< B.size(); i++) {
-			Held_Karp_bound(W, B.at(i), degree, t, N);
-			queue.insert(B.at(i));
+			if(!Held_Karp_bound(W, B.at(i), degree, t, N)){
+				if(B.at(i).HK<U) {
+					insert(S,B.at(i));
+				}
+			}
 		}
 		
-		while(queue.get_len()!=0) {
-			QNode current=queue.pop();
-			if(current.HK<U) {
-				std::vector <int> degree1(size,0);
+		std::vector <int> degree1(size,0);
+		int current=S.size()-1;
+		
+		//Branch and Bound using best bound
+		while(current>=0){
+			QNode node=S.at(current);
+			S.pop_back();
+			
+			//since we use best bound, node.HK is a lower bound for the optimum
+			if(ceil(node.HK)>=U) return std::make_pair(Opt, U);
+			
+			//consider node only if its HK bound is smaller than U
+			if(node.HK<U) {
+				//std::cout<<node.HK<<"\n";
 				for(unsigned int i=0; i< size ; i++) {
-					degree.at(current.one_tree.at(i).first)++;
-					degree.at(current.one_tree.at(i).second)++;
+					degree1.at(node.one_tree.at(i).first)++;
+					degree1.at(node.one_tree.at(i).second)++;
 				}
-				if(!check_tour(current.one_tree,degree1)) { 
-					U=current.HK;
+				//check whether the current one_tree is a tour 
+				if(!check_tour(node.one_tree)) { 
+					//update U
+					U=node.HK;
+					//update Opt
 					for(unsigned int i=0;i<size;i++) {
-						Opt.at(i)=current.one_tree.at(i);
+						Opt.at(i)=node.one_tree.at(i);
 					}
 				}
 				else {
-					std::vector<QNode> B = branch(current.one_tree,degree1,current,size);
-		
+					//branch with node
+					std::vector<QNode> B= branch(node.one_tree,degree1,node,size);
 					for(unsigned int i=0; i< B.size(); i++) {
-						Held_Karp_bound(W, B.at(i), degree, t, N);
-						queue.insert(B.at(i));
+						if(!Held_Karp_bound(W, B.at(i), degree1, t, N)) {
+							//consider B.at(i) only if its HK bound is smaller than U
+							if(B.at(i).HK<U){
+								//check whether we found a tour
+								if(!check_tour(B.at(i).one_tree)) { 
+									U=B.at(i).HK;
+									for(unsigned int k=0;k<size;k++) {
+										Opt.at(k)=B.at(i).one_tree.at(k);
+									}
+								}
+								//insert B.at(i) wrt Held-Karp-Bound
+								insert(S,B.at(i));
+								current++;
+							}
+						}
 					}
 				}
 			}
+			for(unsigned int k=0; k<size;k++) degree1.at(k)=0;
+			current--;
 		}
 	return std::make_pair(Opt, U);
 }
@@ -557,20 +649,34 @@ int main(int argc, char* argv[])
 		std::cout << "Required first argument '--instance <filename>' missing.";
 		return 1;
 	}
+	if(argc!=3 && argc!=5) {
+		std::cout<<"Wrong number of arguments.";
+		return 1;
+	}
  	std::string arg (argv[1]);
+	std::vector<std::vector<double>> graph;
+	
 	if(arg.compare("--instance") != 0)
 	{
 		std::cout << "Required first argument '--instance <filename>' missing or misspelled.";
 		return 1;
 	}
-	std::vector<std::vector<double>> graph = read_graph(argv[2]);
+	try {
+		graph = read_graph(argv[2]);
+	}
+	catch (std::logic_error e) 
+	{
+		std::cout<<e.what();
+		return 1;
+	}
 	std::vector<std::pair<unsigned int, unsigned int>>Tree;
-	double OPT;
+	double OPT=0;
 	std::tie( Tree, OPT)=Branch_and_Bound(graph);
+	std::cout<<OPT;
 	//print_matrix(graph);
 
 	if(argc == 5)
-	{
+	{	
 		std::string arg (argv[3]);
 		if(arg.compare("--solution") == 0)
 		{
